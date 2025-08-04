@@ -19,12 +19,14 @@ CKB is imagined as a modern, competitive alternative to traditional CS education
 
 ---
 
-## 📁 Contents of This Repository
+## 📁 Repository Contents
 
 | File | Description |
 |------|-------------|
-| `RASD.pdf` | Requirements Analysis and Specification Document. Describes goals, functional and non-functional requirements, scenarios, and Alloy formal models. |
-| `DD.pdf` | Design Document. Describes architectural decisions, runtime views, deployment models, UI mockups, and component diagrams. |
+| `RASD.pdf` | *Requirements Analysis and Specification Document* — defines goals, use cases, functional & non-functional requirements, and Alloy specification. |
+| `DD.pdf` | *Design Document* — describes system architecture, components, interfaces, deployment and runtime views, UI mockups, and implementation plan. |
+| `uml_class_diagram.png` | UML Class Diagram for the entire CodeKataBattle system. Defines key entities like User, Tournament, Battle, Team, EvaluationSystem, Badge, etc. |
+| `ckb_alloy_model.als` | Alloy model capturing the static constraints of the system (e.g. one team per battle, valid student-team memberships, badge assignment logic, etc.). |
 
 ---
 
