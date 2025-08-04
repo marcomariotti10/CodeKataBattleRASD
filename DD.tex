@@ -1,0 +1,626 @@
+\documentclass[a4paper, 11pt, titlepage]{article}
+\usepackage[top=2cm,bottom=2cm,left=2cm,right=2cm]{geometry} 
+\usepackage{parskip} 
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage[export]{adjustbox}
+
+\title{
+    CodeKataBattle\\
+    \large Software Engineering 2 Project - DD v1.0
+}
+\author{
+  Mariotti Marco\\
+  Personal code: 10939419
+}
+\date{7 January 2024}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+
+\subsection{Purpose}
+This document contains the description of the architectural design of the \textit{CodeKataBattle} application in alignment with the specifications outlined in the \textit{RASD document}. The document specifies essential design characteristics by introducing constraints and quality attributes required by the implementation. It also provides a comprehensive overview of the implementation plan, integration plan, and testing plan.
+
+\subsection{Scope}
+
+\textit{CodeKataBattle} will be built upon a \textbf{3-tier client server architecture}. In order to guarantee availability and address performance issues, the Application Tier containing the Web Server and the Data Tier containing the Database Server will be replicated. The CKB will be accessible through web browsers on both desktop and mobile devices for both students and educators; the user interface will be designed with distinct implementations tailored to each device type. Considering the diverse user roles, interface implementations will provide different functionalities, addressing the specific needs of each user interacting with the system.
+
+The system also interacts with third party applications, in particular a \href{https://github.com/}{GitHub} API will be used to manage the repositories containing the various CodeKata, and the evaluation system will rely on static analysis tools (an example: \href{https://www.sonarsource.com/products/sonarqube/}{SonarQube}).
+
+\subsection{Definitions, Acronyms, Abbreviations}
+\textbf{Definitions:}
+\begin{itemize}
+    \item \textbf{CodeKataBattle:} The software to be developed.
+    \item \textbf{Student:} The participant in one or more tournaments and battles
+    \item \textbf{Educator:} The creator of one or more tournaments and battles
+    \item \textbf{Tournament:} A competition composed of multiple battles
+    \item \textbf{Battle:} A contest of multiple teams to create a project that satisfies all the tests
+\end{itemize}
+\textbf{Acronyms:}
+\begin{itemize}
+    \item \textbf{CKB:} CodeKataBattle
+\end{itemize}
+
+\newpage
+
+\subsection{Document structure}
+This document is composed of the chapters described below.
+\begin{itemize}
+  \item \textbf{Chapter 1} describes the scope and purpose of the DD, including the structure of the document and the set of definitions, acronyms and abbreviations used.
+  \item \textbf{Chapter 2} contains the architectural design choice, it includes all the components, the interfaces, the technologies (both hardware and software) used for the development of the application. It also includes the main functions of the interfaces and the processes in which they are utilised (runtime view and component interfaces). Finally, there is the explanation of the architectural patterns chosen with the other design decisions.
+  \item \textbf{Chapter 3} The third chapter contains mockups for the user interface of the system to be.
+  \item \textbf{Chapter 4} describes the connection between the RASD and the DD, showing the matching between the goals and requirements described previously with the elements which compose the architecture of the application.
+  \item \textbf{Chapter 5} traces a plan for the development of components to maximize the efficiency of the developer team and the quality controls team. It is divided in two sections: implementation and integration. It also includes the testing strategy.
+  \item \textbf{Chapter 6} shows the effort spent for each member of the group.
+  \item \textbf{Chapter 7} lists the eventual references used in this document.
+\end{itemize}
+
+\newpage
+
+%***************************************************************%
+%************************** CHAPTER 2 **************************%
+%***************************************************************%
+
+\section{Architectural Design}
+
+\subsection{Overview}
+
+The CKB application will rely on a 3-Tier Architecture. This type of architecture is well established, and because of the fact that each tier runs on its own infrastructure, each tier can be deveoped and mantained simultaneously, wihout impacting other tiers.
+The three tiers are the following:
+\begin{itemize}
+  \item \textit{Presentation}: this tier incorporates the user interface and communication layer of the application, managing the interaction of the end user with the application itself.
+  It is the top-level tier of the architecture, it  can run on a desktop application, a web browser (like in the case of CKB) or on any graphical user interface.
+  \item \textit{Application}: the application tier, also called logic tier, incorporates the buisiness logic behind the application. The application tier interacts both with the presentation tier and the data tier, overseeing the transfer of data between the other two layers.
+  \item \textit{Data}: the data tier contains the database of the application, so all the information that is stored and processed in the application. It can be implemented by relational database management systems (DBMS) such as PostgreSQL or MySQL.  
+\end{itemize} 
+
+The system will also interact with some external services, through appropriate APIs. In particular, a mail server for sending notifications to users, GitHub for the project workflow management and any kind of appliaction that provides static analysis tools for code analysis, such as \href{https://www.sonarsource.com/products/sonarqube/}{SonarQube}.
+
+\begin{figure}[H]
+  \includegraphics[width=0.75\textwidth]{images/high_level_overview.png}
+  \caption{High-level overview of the 3-tier architecture for CKB}
+  \label{fig:CKB_high_level_overview}
+  \centering
+\end{figure}
+
+\newpage
+
+\subsection{Component View}
+In the following section the component diagram is included in order show the main components of the system and the relationships between them.
+
+\begin{figure}[H]
+  \includegraphics[width=1\textwidth]{images/componentDiagram_240106.png}
+  \caption{CKB Platform Component Diagram}
+  \label{fig:CKB_component1}
+  \centering
+\end{figure}
+
+The CKB Platform consists of the following components (divided with respect to the 3 tiers architecture):
+\begin{itemize}
+\item \textbf{Presentation}:
+\begin{itemize}
+  \item \texttt{WebApp:} Web browser client application
+\end{itemize}
+
+\item \textbf{Application}:
+\begin{itemize}
+  \item \textbf{Tournament Management Service}: subsystem dedicated to Tournament Management
+    \begin{itemize}
+      \item \texttt{Educator Tournament Manager}: component containing all the functions allowing an Educator user to create and manage a Tournament
+      \item \texttt{Educator Battle Manager}: component that contains all the functions allowing an Educator user to create and manage a Battle
+      \item \texttt{Student Tournament Manager}: component containing all the functions allowing a Student user to browse and join Tournaments
+      \item \texttt{Student Battle Manager}: component containing all the functions allowing a Student user to join a Battle and actively monitor its progress
+      \item \texttt{Evaluation System:}: component that provides the score for a Battle
+      \item \texttt{TeamHandler}: component that handles the Team creation process for a Battle
+      \item \texttt{BadgeFactory}: component that allows an Educator user to create Badges
+    \end{itemize}
+  \item \textbf{Access Manager:} subsystem dedicated to user management
+    \begin{itemize}
+      \item \texttt{User Registration Service}: component that handles the registration process to CKB
+      \item \texttt{User Login Service}: component that allows the login process to CKB
+    \end{itemize}
+  \item \textbf{QueryManager}: component that interacts with the database. It collects all the functions containing a query to the DB
+\end{itemize}
+
+\item \textbf{Data}:
+\begin{itemize}
+  \item \textbf{DBMS:} database server
+\end{itemize}
+
+\item \textbf{External}:
+  \begin{itemize}
+    \item \texttt{GitHub}: external component that allows the CKB Platform to interact with the repositories of the various Battles.
+    \item \texttt{Static Analysis Tool}: external component that provide the static analysis measurements in order to compute a Battle's score
+    \item \texttt{Mail server}: external component that allows the CKB Platform to send emails to the user
+  \end{itemize}
+\end{itemize}
+
+\subsection{Deployment View}
+In this section the deployment diagram is included (figure\ref{fig:deployment_diag}) in order to capture the topology of the system's hardware.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/deploymentView.png}
+  \caption{CKB Platform Deployment Diagram}
+  \label{fig:deployment_diag}
+  
+\end{figure}
+
+As previously specified, the system implements a 3-tier architecture. In the following, details about each tier is included.
+\begin{enumerate}
+  \item \textbf{Presentation Tier}: contains the UI part of the system. Users access the CKB Platform throught the web browser installed on their devices (both Computers and Smartphones). An HTTPS connection is needed in order to communicate with the Web Server.
+  \item \textbf{Application Tier}: the \textit{Web Server} containing all the business logic of the CKB Platform is deployed within this tier. In order to guarantee the system's availability and performance, 2 replicas of the web server are deployed, and the distribution of requests coming from the presentation tier is handled by the \textit{Load Balancer}. Additionally, a \textit{Firewall} is in place to monitor both incoming and outgoing traffic. The Application Tier handles requests from the Presentation Tier using the HTTPs protocol, while communicates with the Data Tier through TCP/IP.
+  \item \textbf{Data Tier}: the \textit{Database Server} is deployed within this tier. All data regarding users, statistics, ongoing and past tournament and battles is contained here. The Database Server is accessed by the Application Tier using a TCP/IP connection. Incoming and outgoing traffic is monitored by a \textit{Firewall} and the Database Server is replicated 2 times; the distribution of requests is handled by a \textit{Load Balancer} as well.
+\end{enumerate}
+
+\newpage
+
+\subsection{Runtime View}
+In this section we include sequence diagrams to represent run-time interactions among components defined in the component diagram of section 2.2.
+Interctions and scenarios will follow those described in Use Cases presented in the RASD document, going into further detail about how the system behaves in relation to 
+interactions among components.
+
+For simpicity's sake and readability, we assume that all data manually inserted by the user is correct, and that errors caused by loss of connection or system failure don't happen. In those cases,
+operations currently in process are not completed, an error message is displayed and the user is asked to try again.
+
+\subsubsection*{Student registration}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/stud_reg_DD.png}
+  \caption{User registers as a student}
+  \label{fig:seq_diag_stud_reg}
+  
+\end{figure}
+
+\subsubsection*{Educator registration}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/edu_reg_DD.png}
+  \caption{User registers as an educator}
+  \label{fig:seq_diag_edu_reg}
+  
+\end{figure}
+
+\subsubsection*{User login}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/login_DD.png}
+  \caption{User logs in CKB}
+  \label{fig:seq_diag_login}
+  
+\end{figure}
+
+\subsubsection*{Join tournament}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/join_tournament_DD.png}
+  \caption{Student joins a tournament}
+  \label{fig:seq_diag_join_tourn}
+\end{figure}
+
+\subsubsection*{Create a team}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/create_team_DD.png}
+  \caption{Student creates a new team}
+  \label{fig:seq_diag_create_team}
+\end{figure}
+
+\subsubsection*{Request to join a team}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/request_join_team_DD.png}
+  \caption{A student sends a join request to a team}
+  \label{fig:seq_diag_req_join_team}
+\end{figure}
+
+\subsubsection*{Invite to join a team}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/invite_to_team_DD.png}
+  \caption{A student (team member) invites another student to join their team}
+  \label{fig:seq_diag_invite_join_team}
+\end{figure}
+
+\subsubsection*{Quit team}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/quit_team_DD.png}
+  \caption{A student quits their team}
+  \label{fig:seq_diag_quit_team}
+\end{figure}
+
+\subsubsection*{New code pushed on GitHub repository}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/push_git_DD.png}
+  \caption{A student executes a push on their GitHub repository for their project}
+  \label{fig:seq_diag_Git_push}
+\end{figure}
+
+\subsubsection*{Creation of a Tournament and Badge creation process}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/create_tournament_badges_DD.png}
+  \caption{Educator creates a tournament. Badge creation process.}
+  \label{fig:seq_diag_create_tourn}
+\end{figure}
+
+\subsubsection*{Battle creation}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/create_battle_DD.png}
+  \caption{Educator creates a battle}
+  \label{fig:seq_diag_create_battle}
+\end{figure}
+
+\subsubsection*{Invite educators to a Tournament}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/invite_educator_tournament_DD.png}
+  \caption{An educator invites another educator as tournament manager}
+  \label{fig:seq_diag_invite_educator}
+\end{figure}
+
+\subsubsection*{Battle closure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/close_battle_DD.png}
+  \caption{Closing of a battle after deadline expiration}
+  \label{fig:seq_diag_close_battle}
+\end{figure}
+
+\subsubsection*{Tournament Closure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/close_tournament_DD}
+  \caption{Closing of a tournament}
+  \label{fig:seq_diag_close_tournament}
+\end{figure}
+
+\subsection{Component Interfaces}
+
+The following diagram outlines the main methods that can be invoked on the interfaces made available by the various components, referencing the key processes detailed in the runtime view section. It is important to note that the methods presented in the \textit{Component Interfaces diagram} should not be interpreted as the precise methods developers will write. Instead, they serve as a conceptual representation of the capabilities offered by component interfaces.
+\newline
+\textbf{Note:} the arrows' head are pointed towards the component whose interface is being used. So for example, the \texttt{Student Tournament Manager} component uses the the \texttt{Query Manager} interface.
+
+\begin{figure}[H]
+  \includegraphics[width=1\textwidth]{images/componentInterfaces_240106.png}
+  \caption{CKB Platform Component Diagram}
+  \label{fig:CKB_component2}
+  \centering
+\end{figure}
+
+\newpage
+
+\subsection{Selected Architectural Styles and Patterns}
+
+\subsubsection*{3-Tier Architecture}
+As previously discussed, the CKB Platform is structured on a \textbf{3-tier Client-Server Architecture}. This architectural choice ensures the system's scalability, modularity, and maintainability, while also guaranteeing platform independence. Additionally, the components within the application server are designed to maintain cohesiveness and exhibit low coupling among modules, with advantages in terms of comprehensibility and modifiability within the system.
+
+\subsubsection*{Model View Controller (MVC)}
+The MVC pattern separates the concerns of data management (Model), presentation (View), and request handling (Controller). This separation enhances modularity, maintainability, and flexibility in developing and managing server-side logic.
+In the context of a 3-tier architecture:
+\begin{enumerate}
+  \item The \textbf{View} corresponds to the presentation tier, responsible for displaying information to users and receiving their input.
+  \item The \textbf{Controller} corresponds to the business logic tier, managing the flow of data and business rules.
+  \item The \textbf{Model} corresponds to the data storage tier, handling the storage and retrieval of data.
+\end{enumerate}
+
+\subsubsection*{Observer Pattern}
+This pattern relies on two categories of objects: the \textbf{Subjects} and the \textbf{Observers}. The Subject is an object that can change its state, while the Observer is subscribed to the Subject. Whenever a Subject change its state the Observer is automatically notified. In the CKB Platform context, this pattern can be used in the \texttt{EvaluationSystem} component:  whenever a Team commits new code to the Repository associated with a Battle, the \texttt{GitHubRepo} object (acting as the Subject) automatically informs the \texttt{EvaluationSystem} object (the Observer) about the new commit. This triggers the EvaluationSystem component that will compute the Team's CokeKata evaluation, updating the real-time score for the Team.
+
+\newpage
+
+%***************************************************************%
+%************************** CHAPTER 3 **************************%
+%***************************************************************%
+
+\section{User Interface Design}
+This chapter showcases mockups of the key pages of the CKB WebApp. While predominantly displayed in desktop format, all pages of the WebApp are equally accessible in a mobile format. The design of the Web Application interface adheres to responsive principles, ensuring optimal usability on mobile devices as well.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{images/Home page v2.png}
+  \caption{CKB Home Page}
+  \label{fig:Home_page}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{images/Tournament list.png}
+  \caption{This is the page where the student can join one or multiple available tournaments}
+  \label{fig:Tournament_list}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{images/Tournament rank v1.png}
+  \caption{CKB Tournament Rank}
+  \label{fig:Tournament_rank}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{images/Battle list v1.png}
+  \caption{This is the page where the student can join one or multiple battles in a tournament he has joined}
+  \label{fig:Battle_list}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{images/Battle Rank v1.png}
+  \caption{CKB Battle Rank}
+  \label{fig:Battle_rank}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{images/Badge creation v1.png}
+  \caption{This is the page where the educator can set the rules for a badge during the tournament creation process}
+  \label{fig:Badge_creation}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{images/tournaments with badges.png}
+  \caption{This is the page where are presented all the tournaments that a student has partecipated and all the badges he has won}
+  \label{fig:List_badges}
+\end{figure}
+
+%***************************************************************%
+%************************** CHAPTER 4 **************************%
+%***************************************************************%
+
+\section{Requirement Traceability}
+
+\begin{center}
+  \begin{tabularx}{\linewidth} {| l | X |}
+    \hline
+    Components & Requrements\\
+    \hline
+    WebApp& R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, R12, R13, R14, R15, R16, R17, R18, R19, R20, R21, R22, R23, R24, R25, R26, R27, R28, R29\\
+    \hline
+    User registration service& R1\\
+    \hline
+    User login service& R2\\
+    \hline
+    Educator Tournament Manager&R4, R5, R6, R7, R8, R9, R11, R27, R28, R29\\
+    \hline
+    Educator battle manager& R11, R12, R13, R14, R15, R16, R25, R26\\
+    \hline
+    BadgeFactory &R6\\
+    \hline
+    Student tournament manager&R10, R24\\
+    \hline
+    Student Battle Manager&R17, R18, R19, R20, R21, R22, R23, R24\\
+    \hline
+    Evaluation system&R24\\
+    \hline
+    TeamHandler& R17, R18, R19, R20, R21, R22, R23\\
+    \hline
+    Static Analysis Tool&R24, R25\\
+    \hline
+    Github& R24\\
+    \hline
+    Mail server& R9, R16, R18, R20, R26, R28\\
+    \hline
+    Query manager and Database&R1, R2, R3, R4, R5, R6, R7, R8, R10, R11, R12, R13, R14, R15, R17, R19, R21, R22, R23, R24, R25, R26, R27, R28, R29\\
+    \hline
+  \end{tabularx}
+\end{center}
+
+\hfill
+
+The following list shows the \textbf{Functional Requirements} of the CKB system, which are the same reported int he RASD document:
+\begin{enumerate}[font={\bfseries}, label={R\arabic* :}]
+    \item The system must allow an unregistered user to register an account with personal informations and define a username.
+    \item The system must allow a registered user to login into his account.
+    \item The system must allow registered educators to create a new tournament.
+    \item The system must allow registered educators to write a description for the tournament during a tournamnet creation process.
+    \item The system must allow registered educators to set a subscription deadline during a tournament creation process. 
+    \item The system must allow registered educators to define badge's names and rules during a tournamnet creation process.
+    \item The system must allow registered educators to give permission to other educators to create battles in the tournament they have created.
+    \item The system must allow registered educators to accept or deny the permission for the creation of battles by another educator.
+    \item The system must allow registered students to be notified (also via e-mail) when a new tournament is created.
+    \item The system must allow registered students to subscribe to a new tournament until the registration deadline expires.
+    \item The system must allow registered educators with permission to create a new battle within an existing tournament.
+    \item The system must allow registered educators to upload the code kata during a battle creation process.
+    \item The system must allow registered educators to set minimum and maximum team's members number during a battle creation process.
+    \item The system must allow registered educators to set a submission deadline and a finish deadline during a battle creation process.
+    \item The system must allow registered educators to set scoring parameters during a battle creation process.
+    \item The system must allow registered students to be notified (also via e-mail) when a new battle is created in a tournament they are involved.
+    \item The system must allow registered students to form teams for a battle.
+    \item The system must allow registered students to invite other students to join their team. 
+    \item The system must allow registered students to to accept or deny the invite by another student to be part of his team.
+    \item The system must allow registered students to send a request to join an existing team for a battle they want to join.
+    \item The system must allow registered students to accept or deny a request to join their team by another student.
+    \item The system must allow registered students to quit their team before joining the battle.
+    \item The system must allow registered students to join battles within tournaments they're subscribed to.
+    \item The system must allow registered students to track their score every time they perform a push on the GitHub repository of their project.
+    \item The system must allow registered educators to perform the manual evaluation of the codes and assign a personal score during the consolidation stage.
+    \item The system must allow registered students to be notified (also via e-mail) when the final battle rank is available.
+    \item The system must allow registered educators to close tournaments (if they are the one that have created the tournament).
+    \item The system must allow registered students to be notified (also via e-mail) when the final tournament rank is available.
+    \item The system must allow registered users to visualize badges obtained by the students (in their personal profile and also in the final tournament rank).
+\end{enumerate}
+
+\newpage
+
+%***************************************************************%
+%************************** CHAPTER 5 **************************%
+%***************************************************************%
+
+\section{Implementation, Integration and Test Plan}
+
+\subsection{Introduction}
+Describing how and the order of the implementation is crucial to be able to develop a well
+structured software.
+Unit testing and integration testing are also fundamental to avoid bugs, errors and to check if
+all the functionalities are well implemented.
+
+\subsection{Implementation Plan}
+A bottom-up strategy is the best way to develop this kind of software, starting from the low
+level components, like the QueryManager, and ending with the WebApp.
+The following list shows the order in which the
+internal components must be implemented:
+
+\begin{itemize}
+  \item Data
+  \item QueryManager
+  \item Tournament Management Service:
+  \begin{itemize}
+      \item Evaluation System
+      \item TeamHandler
+      \item Student Battle Manager
+      \item Student Tournament Manager
+      \item BadgeFactory
+      \item Educator Battle Manager
+      \item Educator Tournament Manager
+  \end{itemize}
+  \item Access Manager Service
+  \begin{itemize}
+      \item User Login Service
+      \item User Registration Service
+  \end{itemize}
+  \item WebApp
+\end{itemize}
+
+The external components are not presented since they are assumed to be already implemented.
+
+\subsection{Integration Strategy}
+The following diagrams show step by step how each component of the system is implemented
+and integrated with the others, according to the order described above.
+For clarification, the arrows in the diagrams below indicate the relationships between the varius components and the implementation status of the relationship.
+A dashed arrow indicates that the relationship is being implemented at that stage of implementation. Instead, the solid arrow indicates that the relationship has already been implemented.
+In each integration step it is necessary to run integration tests to check if the integration issuccessful.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.3\textwidth]{images/capitolo 51.png}
+  \caption{The implementation and testing of the QueryManager component}
+  \label{fig:Query}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{images/capitolo 52.png}
+  \caption{The implementation and testing of the Tournament Manager Service component}
+  \label{fig:Tournament}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{images/capitolo 53.png}
+  \caption{The implementation and testing of the Login Manager Service component}
+  \label{fig:Login}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{images/capitolo 54.png}
+  \caption{The implementation and testing of the WebApp component}
+  \label{fig:WebApp}
+\end{figure}
+
+\subsection{System Testing}
+When the system is fully developed and all the integration tests are successfully passed, it is
+necessary to verify the system correctness with the system testing. The system testing concerns
+the functional and non-functional requirements described in the RASD and the performance
+evalutation.
+The system testing is divided in:
+\begin{itemize}
+  \item Functional testing: To evaluate the compliance of the system with specified functional
+  and non-functional requirements.
+  \item Performance testing: To determine how the system performs in terms of scalability, reliability and resource usage. It also identify bottlenecks affecting response time, utilization,
+  thoughput.
+  \item  Load testing: To measure the response of putting demand on the system. It shows bugs
+  such as memory leaks, mismanagement of memory, buffer overflows.
+  \item  Stress testing: To measure the robustness, availability and error handling by testing
+  beyond the limits of normal operation.
+\end{itemize}    
+
+%***************************************************************%
+%************************** CHAPTER 6 **************************%
+%***************************************************************%
+
+\section{Effort Spent}
+The following tables display the effort spent by each member of the group.\\
+
+\textbf{Daniele Gagni}
+
+\begin{tabular}{|l|l|} 
+  \hline
+  \textbf{Chapter}            & \textbf{Hours}  \\ 
+  \hline
+  Introduction                & 1h (1h together)             \\ 
+  \hline
+  Architectural Design         & 12h (4h together)          \\ 
+  \hline
+  User Interface Design       & 3h (3h together)              \\ 
+  \hline
+  Requirements Traceability & 2h (2h together)               \\ 
+  \hline
+  Implementation, Integration and Test Pkan & 0.5h (0.5h together)               \\ 
+  \hline
+\end{tabular}\\
+
+\textbf{Guglielmelli Isabella}
+
+\begin{tabular}{|l|l|} 
+    \hline
+    \textbf{Chapter}            & \textbf{Hours}  \\ 
+    \hline
+    Introduction                & 1.5h (1h together)             \\ 
+    \hline
+    Architectural Design         & 13h (4h together)          \\ 
+    \hline
+    User Interface Design       & 3h (3h together)              \\ 
+    \hline
+    Requirements Traceability & 3h (2h together)               \\ 
+    \hline
+    Implementation, Integration and Test Pkan & 0.5h (0.5h together)               \\ 
+    \hline
+\end{tabular}\\
+
+\textbf{Mariotti Marco}
+
+\begin{tabular}{|l|l|} 
+  \hline
+  \textbf{Chapter}            & \textbf{Hours}  \\ 
+  \hline
+  Introduction                & 1h (1h together)             \\ 
+  \hline
+  Architectural Design         & 4h (4h together)          \\ 
+  \hline
+  User Interface Design       & 13h (3h together)              \\ 
+  \hline
+  Requirements Traceability & 2h (2h together)               \\ 
+  \hline
+  Implementation, Integration and Test Pkan & 1.5h (0.5h together)               \\ 
+  \hline
+\end{tabular}\\
+
+
+\section{References}
+\begin{itemize}
+  \item \href{https://www.sonarsource.com/products/sonarqube/}{SonarQube}
+  \item \href{https://github.com/}{GitHub}
+\end{itemize}
+\end{document}
